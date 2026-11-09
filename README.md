@@ -1,7 +1,5 @@
 # Matrix
 
-[![CI](https://github.com/Verafahn/matrix/actions/workflows/ci.yml/badge.svg)](https://github.com/Verafahn/matrix/actions/workflows/ci.yml)
-
 Static, row-major matrices and common transformation math for Zig.
 
 Matrix dimensions are compile-time constants, so incompatible shapes are
