@@ -1,0 +1,12 @@
+.{
+    .name = .matrix,
+    .version = "0.1.0",
+    .fingerprint = 0xf83341cf098d775f,
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+        "README.md",
+        "LICENSE",
+    },
+}
