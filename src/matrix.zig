@@ -158,6 +158,21 @@ pub fn Matrix(comptime E: type, comptime row_cnt: comptime_int, comptime col_cnt
             return values;
         }
 
+        /// Returns the main diagonal.
+        pub fn getDiagonal(self: Self) [diagonal_len]Ele {
+            const flat: [len]Ele = self.data;
+            var values: [diagonal_len]Ele = undefined;
+            for (0..diagonal_len) |i| values[i] = flat[i * col + i];
+            return values;
+        }
+
+        /// Sets the main diagonal.
+        pub fn setDiagonal(self: *Self, values: [diagonal_len]Ele) void {
+            var flat: [len]Ele = self.data;
+            for (0..diagonal_len) |i| flat[i * col + i] = values[i];
+            self.data = flat;
+        }
+
         /// Returns the transpose of this matrix.
         pub fn transpose(self: Self) Matrix(E, col, row) {
             const flat: [len]Ele = self.data;
@@ -206,6 +221,23 @@ pub fn Matrix(comptime E: type, comptime row_cnt: comptime_int, comptime col_cnt
         /// Element-wise (Hadamard) multiplication.
         pub fn hadamard(self: Self, other: Self) Self {
             return .{ .data = self.data * other.data };
+        }
+
+        /// Raises a square matrix to a non-negative integer power.
+        ///
+        /// `pow(0)` returns the identity matrix.
+        pub fn pow(self: Self, exponent: usize) Self {
+            comptime if (!is_square) @compileError("pow requires a square matrix");
+
+            var result = identity();
+            var base = self;
+            var remaining = exponent;
+            while (remaining != 0) {
+                if ((remaining & 1) == 1) result = result.mul(base);
+                remaining >>= 1;
+                if (remaining != 0) base = base.mul(base);
+            }
+            return result;
         }
 
         /// Matrix multiplication.
@@ -269,6 +301,81 @@ pub fn Matrix(comptime E: type, comptime row_cnt: comptime_int, comptime col_cnt
                 sum += flat[i * col + i];
             }
             return sum;
+        }
+
+        /// Returns the Frobenius norm.
+        ///
+        /// Only available for floating-point matrices.
+        pub fn frobeniusNorm(self: Self) Ele {
+            comptime {
+                if (@typeInfo(Ele) != .float) {
+                    @compileError("frobeniusNorm requires a floating-point matrix");
+                }
+            }
+
+            const flat: [len]Ele = self.data;
+            var sum_squares: Ele = 0;
+            for (0..len) |i| sum_squares += flat[i] * flat[i];
+            return @sqrt(sum_squares);
+        }
+
+        /// Returns the largest absolute element.
+        ///
+        /// Only available for floating-point matrices.
+        pub fn maxNorm(self: Self) Ele {
+            comptime {
+                if (@typeInfo(Ele) != .float) {
+                    @compileError("maxNorm requires a floating-point matrix");
+                }
+            }
+
+            const flat: [len]Ele = self.data;
+            var largest: Ele = 0;
+            for (0..len) |i| {
+                const value = @abs(flat[i]);
+                if (value > largest) largest = value;
+            }
+            return largest;
+        }
+
+        /// Returns the 1-norm (maximum absolute column sum).
+        ///
+        /// Only available for floating-point matrices.
+        pub fn oneNorm(self: Self) Ele {
+            comptime {
+                if (@typeInfo(Ele) != .float) {
+                    @compileError("oneNorm requires a floating-point matrix");
+                }
+            }
+
+            const flat: [len]Ele = self.data;
+            var largest: Ele = 0;
+            for (0..col) |c| {
+                var sum: Ele = 0;
+                for (0..row) |r| sum += @abs(flat[r * col + c]);
+                if (sum > largest) largest = sum;
+            }
+            return largest;
+        }
+
+        /// Returns the infinity norm (maximum absolute row sum).
+        ///
+        /// Only available for floating-point matrices.
+        pub fn infinityNorm(self: Self) Ele {
+            comptime {
+                if (@typeInfo(Ele) != .float) {
+                    @compileError("infinityNorm requires a floating-point matrix");
+                }
+            }
+
+            const flat: [len]Ele = self.data;
+            var largest: Ele = 0;
+            for (0..row) |r| {
+                var sum: Ele = 0;
+                for (0..col) |c| sum += @abs(flat[r * col + c]);
+                if (sum > largest) largest = sum;
+            }
+            return largest;
         }
 
         /// Returns the determinant using LU decomposition with partial

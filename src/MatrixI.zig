@@ -132,3 +132,24 @@ test "equality, slices, and formatting" {
         try std.fmt.bufPrint(&buffer, "{f}", .{a}),
     );
 }
+
+test "diagonal and integer powers" {
+    const Mat = MatrixI(i32, 2, 2);
+    var a = Mat.fromRows(.{
+        .{ 1, 2 },
+        .{ 3, 4 },
+    });
+
+    try std.testing.expectEqual([2]i32{ 1, 4 }, a.getDiagonal());
+    a.setDiagonal(.{ 5, 6 });
+    try std.testing.expectEqual([2][2]i32{
+        .{ 5, 2 },
+        .{ 3, 6 },
+    }, a.toRows());
+
+    try std.testing.expectEqual([2][2]i32{
+        .{ 7, 10 },
+        .{ 15, 22 },
+    }, Mat.fromRows(.{ .{ 1, 2 }, .{ 3, 4 } }).pow(2).toRows());
+    try std.testing.expect(Mat.fromRows(.{ .{ 1, 2 }, .{ 3, 4 } }).pow(0).eql(Mat.identity()));
+}

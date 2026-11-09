@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) !void {
     const run_examples_step = b.step("run-examples", "Run all examples.");
 
     if (b.isRoot()) {
-        const example_names = [_][]const u8{ "basic", "transform" };
+        const example_names = [_][]const u8{ "basic", "transform", "linalg" };
         for (example_names) |name| {
             const exe = b.addExecutable(.{
                 .name = name,

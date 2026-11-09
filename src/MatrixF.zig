@@ -208,3 +208,34 @@ test "formatting" {
         printed,
     );
 }
+
+test "diagonal, power, and norms" {
+    const Mat = MatrixF(f64, 2, 2);
+    var a = Mat.fromRows(.{
+        .{ 3, 4 },
+        .{ 0, 5 },
+    });
+
+    try std.testing.expectEqual([2]f64{ 3, 5 }, a.getDiagonal());
+    a.setDiagonal(.{ 1, 2 });
+    try std.testing.expectEqual([2][2]f64{
+        .{ 1, 4 },
+        .{ 0, 2 },
+    }, a.toRows());
+
+    const square = Mat.fromRows(.{
+        .{ 3, 4 },
+        .{ 0, 5 },
+    });
+    try std.testing.expectEqual([2][2]f64{
+        .{ 9, 32 },
+        .{ 0, 25 },
+    }, square.pow(2).toRows());
+    try std.testing.expect(square.pow(3).eql(square.mul(square).mul(square)));
+    try std.testing.expect(square.pow(0).eql(Mat.identity()));
+
+    try std.testing.expect(std.math.approxEqAbs(f64, @sqrt(@as(f64, 50)), square.frobeniusNorm(), 1e-12));
+    try std.testing.expectEqual(@as(f64, 9), square.oneNorm());
+    try std.testing.expectEqual(@as(f64, 7), square.infinityNorm());
+    try std.testing.expectEqual(@as(f64, 5), square.maxNorm());
+}

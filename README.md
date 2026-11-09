@@ -18,6 +18,9 @@ operations return a new matrix and never mutate their inputs.
 - Addition, subtraction, negation, scaling, Hadamard product, transpose, trace,
   determinant, and inverse.
 - Exact and approximate equality, plus `{f}` formatting.
+- LU, QR, and Cholesky decompositions, linear-system solves, least squares,
+  symmetric eigendecomposition, RREF/rank, null-space bases, and adjugates.
+- Frobenius, 1-norm, infinity-norm, and max norms, plus matrix powers.
 - 2D and 3D translation, scaling, rotation, look-at view, perspective, and
   orthographic projection helpers.
 - No allocations and no dependencies beyond the Zig standard library.
@@ -131,6 +134,63 @@ Available helpers:
 The projection helpers use the depth range used by Vulkan and WebGPU. The
 camera looks down negative Z in view space.
 
+## Linear algebra
+
+`matrix.linalg` contains numerical routines for floating-point matrices:
+
+```zig
+const linalg = matrix.linalg;
+
+const A = matrix.MatrixF(f64, 3, 3);
+const a = A.fromRows(.{
+    .{ 2, -1, 1 },
+    .{ 1, 3, 2 },
+    .{ 1, -1, 2 },
+});
+const b: @Vector(3, f64) = .{ 1, 2, 3 };
+
+if (linalg.solve(a, b)) |x| {
+    // x solves a * x = b
+    _ = x;
+}
+
+if (linalg.lu(a)) |decomposition| {
+    // decomposition.lower, decomposition.upper, decomposition.permutation
+    const det = decomposition.determinant();
+    _ = det;
+}
+
+const symmetric = A.fromRows(.{
+    .{ 2, 1, 0 },
+    .{ 1, 2, 0 },
+    .{ 0, 0, 5 },
+});
+if (linalg.eigenSymmetric(symmetric, 1e-12)) |eigen| {
+    // eigen.values are sorted ascending; eigen.vectors stores eigenvectors by
+    // column.
+    _ = eigen;
+}
+```
+
+Available routines:
+
+| Function | Description |
+| --- | --- |
+| `lu(a)` | LU decomposition with partial pivoting, or `null` if singular |
+| `solve(a, b)`, `solveMatrix(a, b)` | Solve `A*x=b` or `A*X=B` |
+| `qr(a)` | Thin QR decomposition using modified Gram-Schmidt |
+| `leastSquares(a, b)` | Solve `min ||A*x-b||` for tall matrices |
+| `cholesky(a)` | Cholesky factor of a symmetric positive-definite matrix |
+| `eigenSymmetric(a, tolerance)` | Eigenvalues/vectors of a symmetric matrix |
+| `rref(a, tolerance)`, `rank(a, tolerance)` | Reduced row echelon form and rank |
+| `nullSpace(a, tolerance)` | Basis for the null space |
+| `minor(a, r, c)`, `cofactor(a, r, c)`, `adjugate(a)` | Cofactor and adjugate operations |
+| `isSymmetric(a, tolerance)` | Symmetry check |
+
+Tolerances are absolute. Singular systems, rank-deficient QR inputs,
+non-positive-definite Cholesky inputs, and non-converged eigensolvers return
+`null`.
+
 ## API overview
 
 Both constructors return a matrix type with these compile-time constants:
@@ -156,6 +216,7 @@ Constructors and conversion:
 | `toArray()`, `toRows()` | Convert back to arrays |
 | `at(r, c)`, `set(r, c, value)` | Read or write one element |
 | `getRow(r)`, `getCol(c)` | Read a row or column as a vector |
+| `getDiagonal()`, `setDiagonal(values)` | Read or write the main diagonal |
 
 Operations:
 
@@ -165,8 +226,10 @@ Operations:
 | `hadamard(other)` | Element-wise multiplication |
 | `mul(other)` | Matrix multiplication |
 | `mulVec(vector)` | Matrix-vector multiplication |
+| `pow(exponent)` | Non-negative integer matrix power (square only) |
 | `transpose()` | Transpose |
 | `trace()` | Sum of the main diagonal (square only) |
+| `frobeniusNorm()`, `maxNorm()`, `oneNorm()`, `infinityNorm()` | Matrix norms (float only) |
 | `determinant()` | Determinant (square float matrices only) |
 | `inverse()` | Inverse or `null` if singular (square float matrices only) |
 | `eql(other)` | Exact equality |
@@ -184,6 +247,7 @@ zig build examples        # build all examples
 zig build run-examples    # run all examples
 zig build run-basic       # run the basic example
 zig build run-transform   # run the transform example
+zig build run-linalg      # run the linear algebra example
 ```
 
 The examples live in `examples/` and are also built by CI.
